@@ -1,0 +1,49 @@
+PIPELINE:
+
+pipeline {
+    agent {
+        label "${server}"
+    }
+    
+    stages {
+        stage('checkout') {
+            steps {
+                git branch: 'release', url: 'https://github.com/devopsbyraham/jenkins-java-project.git'
+            }
+        }
+        stage('build') {
+            steps {
+                sh 'mvn compile'
+            }
+        }
+        stage('test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+        stage('Artifact') {
+            steps {
+                sh 'mvn package'
+            }
+        }
+        stage('Nexus') {
+            steps {
+                nexusArtifactUploader artifacts: [[artifactId: 'NETFLIX', classifier: '', file: 'target/NETFLIX-1.2.2.war', type: '.war']], credentialsId:              '2ddc080e-391d-49aa-9fe6-47cb9ad2182b', groupId: 'in.RAHAM', nexusUrl: '44.204.78.94:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'devops', version: '1.2.2'
+            }
+        }
+
+        stage('DePloy') {
+            steps {
+               deploy adapters: [
+                   tomcat9(
+                     credentialsId: '1893e76a-eda6-4e4d-96eb-eecc85a3ec41',
+                     path: '',
+                     url: "${url}"
+                   )
+                ],
+                contextPath: 'netflix',
+                war: 'target/*.war'
+            }
+        }
+    }
+}
